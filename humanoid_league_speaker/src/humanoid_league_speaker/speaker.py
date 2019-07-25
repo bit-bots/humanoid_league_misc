@@ -84,7 +84,7 @@ class Speaker(object):
         """ Speak this specific text"""
         # todo make volume adjustable, some how like this
         #        command = ("espeak", "-a", self.amplitude, text)
-        if os.environ['ROBOT_NAME'] in self.female_robots:
+        if os.getenv('ROBOT_NAME') in self.female_robots:
             command = ("espeak", "-p 99", text)
         else:
             command = ("espeak", text)
