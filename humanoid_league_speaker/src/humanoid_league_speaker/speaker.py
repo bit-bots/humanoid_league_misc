@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
-import rosparam
-import rospy
+import rclpy
+from rclpy.node import Node
+from rcl_interfaces.msg import ParameterType, ParameterDescriptor
 import subprocess
 import os
 import traceback
-
-from dynamic_reconfigure.server import Server
-# todo find the problem with this import
 
 from humanoid_league_speaker.cfg import speaker_paramsConfig
 
@@ -23,8 +21,9 @@ def speak(text, publisher, priority=Speak.MID_PRIORITY, speaking_active=True):
         publisher.publish(msg)
 
 
-class Speaker(object):
-    """ Uses espeak to say messages from the speak topic.
+class Speaker(Node):
+    """
+    Uses espeak to say messages from the speak topic.
     """
 
     # todo make also a service for demo proposes, which is blocking while talking
@@ -34,51 +33,49 @@ class Speaker(object):
     # https://github.com/muhrix/espeak_ros/blob/master/src/espeak_ros_node.cpp
 
     def __init__(self):
-        log_level = rospy.DEBUG if rospy.get_param("/debug_active", False) else rospy.INFO
-        rospy.init_node('humanoid_league_speaker', log_level=log_level, anonymous=False)
-        rospy.loginfo("Starting speaker")
+        # TODO: get Log stuff right
+        #log_level = rospy.DEBUG if rospy.get_param("/debug_active", False) else rospy.INFO
+        #rospy.init_node('humanoid_league_speaker', log_level=log_level, anonymous=False)
+        #rospy.loginfo("Starting speaker")
 
         # --- Class Variables ---
         self.low_prio_queue = []
         self.mid_prio_queue = []
         self.high_prio_queue = []
         # if you want to change standard startup, do it in the config yaml
-        self.speak_enabled = None
-        self.print_say = None
-        self.message_level = None
-        self.amplitude = None
+
+        # --- Parameter Setup ---
+
+        self.speak_enabled = self.declare_parameter('speak_enabled', True, ParameterDescriptor(type=ParameterType.PARAMETER_BOOL, description='If the node shall talk'))
+        self.print_say = self.declare_parameter('speak_enabled', True, ParameterDescriptor(type=ParameterType.PARAMETER_BOOL, description='If the node shall talk'))
+        self.message_level = self.declare_parameter('speak_enabled', True, ParameterDescriptor(type=ParameterType.PARAMETER_BOOL, description='If the node shall talk'))
+        self.amplitude = self.declare_parameter('speak_enabled', True, ParameterDescriptor(type=ParameterType.PARAMETER_BOOL, description='If the node shall talk'))
+
+
+        self.add_on_set_parameters_callback(self.reconfigure) #TODO fix this
 
         self.female_robots = ["donna", "amy"]
 
-        # --- Dynamic Reconfigure ---
-        # dyn reconfigure to turn speaking on/off, set volume and to set priority level
-        # will use values from config/speaker_params as start
-        self.server = Server(speaker_paramsConfig, self.reconfigure)
 
         # --- Initialize Topics ---
-        rospy.Subscriber("/speak", Speak, self.speak_cb)
+        self.create_subscription("/speak", Speak, self.speak_cb, 10)
 
-        # --- Start loop ---
-        self.run_speaker()
+        # --- Start Timer ---
+        self.timer = self.create_timer(0.1, self.run_speaker)
 
     def run_speaker(self):
         """ Runs continuously to wait for messages and speaks them."""
-        rate = rospy.Rate(20)
-        while not rospy.is_shutdown():
-            # test if espeak is already running and speak is enabled
-            if not "espeak " in os.popen("ps xa").read() and self.speak_enabled:
-                # take the highest priority message first
-                if len(self.high_prio_queue) > 0:
-                    text, is_file = self.high_prio_queue.pop(0)
-                    self.say(text, is_file)
-                elif len(self.mid_prio_queue) > 0 and self.message_level <= 1:
-                    text, is_file = self.mid_prio_queue.pop(0)
-                    self.say(text, is_file)
-                elif len(self.low_prio_queue) > 0 and self.message_level == 0:
-                    text, is_file = self.low_prio_queue.pop(0)
-                    self.say(text)
-            # wait a bit to eat not all the performance
-            rate.sleep()
+        if not "espeak " in os.popen("ps xa").read() and self.speak_enabled:
+            # take the highest priority message first
+            if len(self.high_prio_queue) > 0:
+                text, is_file = self.high_prio_queue.pop(0)
+                self.say(text, is_file)
+            elif len(self.mid_prio_queue) > 0 and self.message_level <= 1:
+                text, is_file = self.mid_prio_queue.pop(0)
+                self.say(text, is_file)
+            elif len(self.low_prio_queue) > 0 and self.message_level == 0:
+                text, is_file = self.low_prio_queue.pop(0)
+                self.say(text)
 
     def say(self, text, file=False):
         """ Speak this specific text"""
@@ -113,14 +110,14 @@ class Speaker(object):
             is_file = True
             if text is None:
                 # message has no content at all
-                rospy.logwarn("Speaker got message without content.")
+                self.get_logger().warn("Speaker got message without content.")
                 return
         prio = msg.priority
         new = True
 
         # if printing is enabled and it's a text, print it
         if self.print_say and not is_file:
-            rospy.loginfo("Said: " + text)
+            self.get_logger().info("Said: " + text)
 
         if not self.speak_enabled:
             # don't accept new messages
@@ -186,4 +183,15 @@ class Speaker(object):
 """
 
 if __name__ == "__main__":
-    Speaker()
+    rclpy.init()
+
+    speaker = Speaker()
+
+    rclpy.spin(speaker)
+
+    # Destroy the node explicitly
+    # (optional - otherwise it will be done automatically
+    # when the garbage collector destroys the node object)
+    speaker.destroy_node()
+    rclpy.shutdown()
+    #
