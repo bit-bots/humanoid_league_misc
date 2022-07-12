@@ -18,7 +18,7 @@ from tf2_geometry_msgs import PointStamped, PoseStamped
 from bitbots_utils.utils import get_parameters_from_other_node
 from ament_index_python.packages import get_package_share_directory
 
-from humanoid_league_team_communication import robocup_extension_pb2
+from humanoid_league_team_communication import robocup_pb2, robocup_extension_pb2
 
 class HumanoidLeagueTeamCommunication:
     def __init__(self):
@@ -231,8 +231,13 @@ class HumanoidLeagueTeamCommunication:
             if pose.covariance:
                 covariance_proto_to_ros(robot.covariance, pose.covariance)
 
-        message = robocup_extension_pb2.Message()
-        message.ParseFromString(msg)
+        # Try parsing the incoming message as a robocup protocol with extensions, if it fails try the protocol without extensions
+        try:
+            message = robocup_extension_pb2.Message()
+            message.ParseFromString(msg)
+        except:
+            message = robocup_pb2.Message()
+            message.ParseFromString(msg)
 
         player_id = message.current_pose.player_id
         team_id = message.current_pose.team

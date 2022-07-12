@@ -15,10 +15,18 @@ find_package(bitbots_docs REQUIRED)
 
 find_package(Protobuf REQUIRED)
 
-protobuf_generate_python(PROTO_PY
+protobuf_generate_python(PROTO_PY 
+  humanoid_league_team_communication/RobocupProtocol/robocup.proto)
+add_custom_target(humanoid_league_team_communication_robocup_proto ALL DEPENDS ${PROTO_PY})
+add_custom_command(TARGET humanoid_league_team_communication_robocup_proto
+  POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy ${PROTO_PY}
+  ${CMAKE_SOURCE_DIR}/humanoid_league_team_communication)
+
+protobuf_generate_python(PROTO_PY 
   humanoid_league_team_communication/RobocupProtocol/robocup_extension.proto)
-add_custom_target(humanoid_league_team_communication ALL DEPENDS ${PROTO_PY})
-add_custom_command(TARGET humanoid_league_team_communication
+add_custom_target(humanoid_league_team_communication_robocup_extension_proto ALL DEPENDS ${PROTO_PY})
+add_custom_command(TARGET humanoid_league_team_communication_robocup_extension_proto
   POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy ${PROTO_PY}
   ${CMAKE_SOURCE_DIR}/humanoid_league_team_communication)
