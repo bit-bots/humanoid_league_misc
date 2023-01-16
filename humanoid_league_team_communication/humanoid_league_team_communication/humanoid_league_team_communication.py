@@ -15,7 +15,8 @@ import transforms3d
 from rclpy.time import Time
 from std_msgs.msg import Header, Float32
 from geometry_msgs.msg import Twist, PoseWithCovarianceStamped, TwistWithCovarianceStamped
-from humanoid_league_msgs.msg import GameState, TeamData, ObstacleRelativeArray, ObstacleRelative, Strategy
+from humanoid_league_msgs.msg import GameState, TeamData, ObstacleRelative, Strategy
+from soccer_vision_3d_msgs.msg import ObstacleArray
 from tf2_geometry_msgs import PointStamped, PoseStamped
 from bitbots_utils.utils import get_parameter_dict, get_parameters_from_other_node
 from ament_index_python.packages import get_package_share_directory
@@ -69,7 +70,7 @@ class HumanoidLeagueTeamCommunication:
         self.strategy_time = Time(nanoseconds=0, clock_type=self.node.get_clock().clock_type)
         self.time_to_ball = None
         self.time_to_ball_time = Time(nanoseconds=0, clock_type=self.node.get_clock().clock_type)
-        self.obstacles = None  # type: ObstacleRelativeArray
+        self.obstacles = None  # type: ObstacleArray
         self.move_base_goal = None  # type: PoseStamped
 
         # Protobuf <-> ROS Message mappings
@@ -131,7 +132,7 @@ class HumanoidLeagueTeamCommunication:
                                       1)
         self.node.create_subscription(Strategy, self.topics['strategy_topic'], self.strategy_cb, 1)
         self.node.create_subscription(Float32, self.topics['time_to_ball_topic'], self.time_to_ball_cb, 1)
-        self.node.create_subscription(ObstacleRelativeArray, self.topics['obstacle_topic'], self.obstacle_cb, 1)
+        self.node.create_subscription(ObstacleArray, self.topics['obstacle_topic'], self.obstacle_cb, 1)
         self.node.create_subscription(PoseStamped, self.topics['move_base_goal_topic'], self.move_base_goal_cb, 1)
 
     def get_connection(self):
@@ -169,17 +170,17 @@ class HumanoidLeagueTeamCommunication:
     def move_base_goal_cb(self, msg):
         self.move_base_goal = msg
 
-    def obstacle_cb(self, msg):
-        self.obstacles = ObstacleRelativeArray(header=msg.header)
+    def obstacle_cb(self, msg: ObstacleArray):
+        self.obstacles = ObstacleArray(header=msg.header)
         self.obstacles.header.frame_id = self.map_frame
         for obstacle in msg.obstacles:
             # Transform to map
-            obstacle_pose = PoseStamped(msg.header, obstacle.pose.pose.pose)
+            obstacle_pose = PoseStamped(msg.header, obstacle.bb.center)
             try:
                 obstacle_map = self.tf_buffer.transform(obstacle_pose,
                                                         self.map_frame,
                                                         timeout=Duration(nanoseconds=0.3e9))
-                obstacle.pose.pose.pose = obstacle_map.pose
+                obstacle.bb.center = obstacle_map.pose
                 self.obstacles.obstacles.append(obstacle)
             except tf2_ros.TransformException:
                 self.logger.error("TeamComm: Could not transform obstacle to map frame")
@@ -390,6 +391,9 @@ class HumanoidLeagueTeamCommunication:
 
         if self.obstacles and now - self.obstacles.header.stamp < Duration(
                 seconds=self.lifetime):
+            # TODO this currently still uses humanoid_league_msgs but must be
+            # changed to soccer_vision_3d_msgs in order to work. Probably also
+            # change obstacles to robots, but that requires change in vision
             for obstacle in self.obstacles.obstacles:  # type: ObstacleRelative
                 if obstacle.type in (ObstacleRelative.ROBOT_CYAN, ObstacleRelative.ROBOT_MAGENTA,
                                      ObstacleRelative.ROBOT_UNDEFINED):
