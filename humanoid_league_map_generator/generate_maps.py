@@ -148,7 +148,7 @@ def blurDistance(image, blur_factor=args.blur):
     distance_map = 255 - ndimage.morphology.distance_transform_edt(255 - image)
 
     # Maximum field distance
-    maximum_size = math.sqrt(image.shape[0] ** 2 + image.shape[1] ** 2)
+    maximum_size = math.hypot(image.shape[0], image.shape[1])
 
     # Get the value to a value from 0 to 1
     distance_map = (distance_map / maximum_size)

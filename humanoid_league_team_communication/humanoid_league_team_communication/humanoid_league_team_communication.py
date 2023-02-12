@@ -406,8 +406,8 @@ class HumanoidLeagueTeamCommunication:
 
         if (self.ball and now - self.ball.header.stamp < Duration(seconds=self.lifetime) and
                 self.pose and now - self.pose.header.stamp < Duration(seconds=self.lifetime)):
-            ball_distance = math.sqrt((self.ball.point.x - self.pose.pose.pose.position.x) ** 2 +
-                                      (self.ball.point.y - self.pose.pose.pose.position.y) ** 2)
+            ball_distance = math.hypot((self.ball.point.x - self.pose.pose.pose.position.x),
+                                      (self.ball.point.y - self.pose.pose.pose.position.y))
             message.time_to_ball = ball_distance / self.avg_walking_speed
 
         if self.strategy and now - self.strategy_time < Duration(seconds=self.lifetime):
