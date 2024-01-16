@@ -7,20 +7,21 @@ from numpy import double
 from typing import List, Optional, Tuple
 
 import rclpy
-from rclpy.executors import MultiThreadedExecutor
 from ament_index_python.packages import get_package_share_directory
-from bitbots_msgs.msg import GameState, Strategy, TeamData
+from bitbots_msgs.msg import Strategy, TeamData
+from bitbots_tf_listener import TransformListener
 from bitbots_utils.utils import get_parameter_dict, get_parameters_from_other_node
+from game_controller_hl_interfaces.msg import GameState
 from geometry_msgs.msg import PoseWithCovarianceStamped, Twist, TwistWithCovarianceStamped
 from numpy import double
 from rclpy.duration import Duration
+from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
 from rclpy.time import Time
 from soccer_vision_3d_msgs.msg import Robot, RobotArray
 from std_msgs.msg import Float32, Header
 from tf2_geometry_msgs import PointStamped, PoseStamped
 from tf2_ros import Buffer, TransformException
-from bitbots_tf_listener import TransformListener
 
 import humanoid_league_team_communication.robocup_extension_pb2 as Proto
 from humanoid_league_team_communication.communication import SocketCommunication

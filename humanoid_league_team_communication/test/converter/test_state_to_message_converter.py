@@ -3,6 +3,8 @@ from unittest.mock import Mock
 import humanoid_league_team_communication.robocup_extension_pb2 as Proto
 import numpy
 import pytest
+from bitbots_msgs.msg import Strategy
+from game_controller_hl_interfaces.msg import GameState
 from geometry_msgs.msg import (Point, PointStamped, Pose, PoseStamped, PoseWithCovariance, PoseWithCovarianceStamped,
                                Quaternion, Twist, Vector3)
 from humanoid_league_team_communication.converter.robocup_protocol_converter import TeamColor, RobocupProtocolConverter
@@ -11,8 +13,6 @@ from rclpy.time import Time
 from soccer_vision_3d_msgs.msg import Robot, RobotArray
 from soccer_vision_attribute_msgs.msg import Confidence, Robot as RobotAttributes
 from std_msgs.msg import Header
-
-from bitbots_msgs.msg import GameState, Strategy
 
 own_team_id = 1
 own_team_color = TeamColor(own_team_id)

@@ -3,7 +3,8 @@ import transforms3d
 from numpy import double
 from typing import Callable, List, Optional, Tuple
 
-from bitbots_msgs.msg import GameState, Strategy
+from bitbots_msgs.msg import Strategy
+from game_controller_hl_interfaces.msg import GameState
 from geometry_msgs.msg import PointStamped, PoseStamped, PoseWithCovarianceStamped, Quaternion, Twist
 from rclpy.time import Time
 from soccer_vision_3d_msgs.msg import Robot, RobotArray
